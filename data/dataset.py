@@ -4,7 +4,7 @@ import PIL
 from PIL import Image
 from glob import glob
 from os.path import join
-from typing import Tuple
+from typing import Tuple, List
 
 import torch
 import torchvision
@@ -235,3 +235,30 @@ class TripletDataset(torch.utils.data.Dataset):
         )
 
         return data_3d, data_2d
+
+
+class QueryDataset(torch.utils.data.Dataset):
+    """
+    Dataset class for query
+    """
+
+    def __init__(self, imgs: List[str], bg_color=(0, 0, 0), transforms=None):
+        self._data = imgs
+        self._bg_color = bg_color
+        self._transforms = transforms
+
+    def __getitem__(self, idx):
+        image = self._data[idx]
+
+        # Padding
+        image = _pad_image(image, self._bg_color)
+
+        if self._transforms is not None:
+            image = self._transforms(image)
+
+        label = ""
+
+        return image, label
+
+    def __len__(self):
+        return len(self._data)
