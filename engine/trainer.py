@@ -167,12 +167,10 @@ class TripletTrainer(_Trainer):
             # Discriminator
             # ------------------------------
 
-            domain_loss_3d = self._criterion_domain(
-                self._domain_classifier(anc_img_3d), domain_3d
-            )
-            domain_loss_2d = self._criterion_domain(
-                self._domain_classifier(anc_img_2d), domain_2d
-            )
+            precited_domain_3d = self._domain_classifier(anc_img_3d)
+            precited_domain_2d = self._domain_classifier(anc_img_2d)
+            domain_loss_3d = self._criterion_domain(precited_domain_3d, domain_3d)
+            domain_loss_2d = self._criterion_domain(precited_domain_2d, domain_2d)
             domain_loss = domain_loss_3d + domain_loss_2d
             loss_D = domain_loss
 
