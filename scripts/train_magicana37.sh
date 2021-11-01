@@ -1,2 +1,2 @@
 #!/bin/bash
-poetry run python3 train.py -t3d /home/matsunaga/data/magicana/3d/multi_view/NN/20200510_0800_1000_bg_barn_square -t2d /home/matsunaga/data/magicana/3d/corr_2d/20200510_0800_1000 -o magicana37 -ne 100 -bs 128
+poetry run python3 train.py -t3d /home/matsunaga/data/magicana/3d/multi_view/NN/20200510_0800_1000_bg_barn_square -t2d /home/matsunaga/data/magicana/3d/corr_2d/20200510_0800_1000 -o magicana37 -ne 2000 -bs 128
