@@ -1,2 +1,2 @@
 #!/bin/bash
-poetry run python3 train.py -t3d /home/matsunaga/data/obihiro/3d/multi_view/20211002_59class_bg_barn_700px -t2d /home/matsunaga/data/obihiro/3d/corr_2d/20211002_59class -o obihiro59 -ne 2000 -bs 64
+poetry run python3 train.py -t3d /home/matsunaga/data/obihiro/3d/multi_view/20211002_59class_bg_barn_700px -t2d /home/matsunaga/data/obihiro/3d/corr_2d/20211002_59class -o obihiro59 -ne 2000 -bs 32
