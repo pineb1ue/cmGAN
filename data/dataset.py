@@ -29,6 +29,72 @@ class Dataset(torch.utils.data.Dataset):
     Dataset class
     """
 
+    def __init__(self, root_dirs, bg_color=(0, 0, 0), transforms=None):
+        self._name_classes = [
+            fname
+            for fname in sorted(os.listdir(root_dirs))
+            if not fname.startswith(".")
+        ]
+        self._data = self._load_data(root_dirs)
+        self._bg_color = bg_color
+        self._transforms = transforms
+
+    def __getitem__(self, idx):
+        image = Image.open(self._data[idx]["path"])
+
+        # Padding
+        image = _pad_image(image, self._bg_color)
+
+        if self._transforms is not None:
+            image = self._transforms(image)
+
+        label = self._data[idx]["label"]
+        return image, label
+
+    def __len__(self):
+        return len(self._data)
+
+    @property
+    def data(self):
+        return self._data
+
+    @property
+    def num_classes(self):
+        return len(set([d["label"] for d in self._data]))
+
+    @staticmethod
+    def _load_data(root_dirs):
+        data = []
+        first_label = 0
+
+        fnames = [
+            fname
+            for fname in sorted(os.listdir(root_dirs))
+            if not fname.startswith(".")
+        ]
+        for label_id, label in enumerate(fnames, start=first_label):
+            for path in sorted(glob(join(root_dirs, label, "*"))):
+                d = {"path": path, "label": label_id}
+                data.append(d)
+
+            first_label = data[-1]["label"] + 1
+
+        print(
+            "Data loaded. Data has {} images/labels ({} sets).".format(
+                len(data), len(set([d["label"] for d in data]))
+            )
+        )
+
+        return data
+
+
+class TripletDataset(torch.utils.data.Dataset):
+    """
+    Triplet dataset class for domain adaptation
+        Anchor: 3D, Positive: 2D, Negative: 2D
+        Anchor: 2D, Positive: 3D, Negative: 3D
+    """
+
     def __init__(
         self,
         root_dir_3d: str,
@@ -52,82 +118,6 @@ class Dataset(torch.utils.data.Dataset):
         self._data_3d, self._data_2d = self._load_data(root_dir_3d, root_dir_2d)
         self._bg_color = bg_color
         self._transforms = transforms
-
-    def __getitem__(self, idx: int):
-        image_3d = Image.open(self._data_3d[idx]["path"])
-        image_2d = Image.open(self._data_2d[idx]["path"])
-
-        # Padding
-        image_3d = _pad_image(image_3d, self._bg_color)
-        image_2d = _pad_image(image_2d, self._bg_color)
-
-        if self._transforms is not None:
-            image_3d = self._transforms(image_3d)
-            image_2d = self._transforms(image_2d)
-
-        label_3d = self._data_3d[idx]["label"]
-        label_2d = self._data_2d[idx]["label"]
-
-        return image_3d, label_3d, image_2d, label_2d
-
-    def __len__(self):
-        return len(self._data_3d)
-
-    @property
-    def data(self):
-        return self._data_3d
-
-    @property
-    def num_classes(self):
-        return len(set([d["label"] for d in self._data_3d]))
-
-    @staticmethod
-    def _load_data(root_dir_3d: str, root_dir_2d: str):
-        data_3d, data_2d = [], []
-        first_label_3d, first_label_2d = 0, 0
-
-        # 3D
-        fnames_3d = [
-            fname
-            for fname in sorted(os.listdir(root_dir_3d))
-            if not fname.startswith(".")
-        ]
-        for label_id, label in enumerate(fnames_3d, start=first_label_3d):
-            for path in sorted(glob(join(root_dir_3d, label, "*"))):
-                d = {"path": path, "label": label_id}
-                data_3d.append(d)
-            first_label_3d = data_3d[-1]["label"] + 1
-
-        # 2D
-        fnames_2d = [
-            fname
-            for fname in sorted(os.listdir(root_dir_2d))
-            if not fname.startswith(".")
-        ]
-        for label_id, label in enumerate(fnames_2d, start=first_label_2d):
-            for path in sorted(glob(join(root_dir_2d, label, "*"))):
-                d = {"path": path, "label": label_id}
-                data_2d.append(d)
-            first_label_2d = data_2d[-1]["label"] + 1
-
-        print(
-            "Data loaded.\n3D Data has {} images/labels ({} sets)\n2D Data has {} images/labels ({} sets).".format(
-                len(data_3d),
-                len(set([d["label"] for d in data_3d])),
-                len(data_2d),
-                len(set([d["label"] for d in data_2d])),
-            )
-        )
-
-        return data_3d, data_2d
-
-
-class TripletDataset(Dataset):
-    """
-    Triplet dataset class for domain adaptation
-        Anchor: 3D, Positive: 2D, Negative: 2D
-        Anchor: 2D, Positive: 3D, Negative: 3D
-    """
 
     def __getitem__(self, idx: int):
 
@@ -194,3 +184,54 @@ class TripletDataset(Dataset):
             domain_3d,
             domain_2d,
         )
+
+    def __len__(self):
+        return len(self._data_3d)
+
+    @property
+    def data(self):
+        return self._data_3d
+
+    @property
+    def num_classes(self):
+        return len(set([d["label"] for d in self._data_3d]))
+
+    @staticmethod
+    def _load_data(root_dir_3d: str, root_dir_2d: str):
+        data_3d, data_2d = [], []
+        first_label_3d, first_label_2d = 0, 0
+
+        # 3D
+        fnames_3d = [
+            fname
+            for fname in sorted(os.listdir(root_dir_3d))
+            if not fname.startswith(".")
+        ]
+        for label_id, label in enumerate(fnames_3d, start=first_label_3d):
+            for path in sorted(glob(join(root_dir_3d, label, "*"))):
+                d = {"path": path, "label": label_id}
+                data_3d.append(d)
+            first_label_3d = data_3d[-1]["label"] + 1
+
+        # 2D
+        fnames_2d = [
+            fname
+            for fname in sorted(os.listdir(root_dir_2d))
+            if not fname.startswith(".")
+        ]
+        for label_id, label in enumerate(fnames_2d, start=first_label_2d):
+            for path in sorted(glob(join(root_dir_2d, label, "*"))):
+                d = {"path": path, "label": label_id}
+                data_2d.append(d)
+            first_label_2d = data_2d[-1]["label"] + 1
+
+        print(
+            "Data loaded.\n3D Data has {} images/labels ({} sets)\n2D Data has {} images/labels ({} sets).".format(
+                len(data_3d),
+                len(set([d["label"] for d in data_3d])),
+                len(data_2d),
+                len(set([d["label"] for d in data_2d])),
+            )
+        )
+
+        return data_3d, data_2d
